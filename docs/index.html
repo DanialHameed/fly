@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Which Content Pages Should You Refresh First? A Validated Scoring Approach</title>
+<meta name="description" content="A client-grouped, leakage-audited model for prioritizing content refresh, built on the FlyRank ML Internship dataset.">
+<style>
+  :root {
+    --bg: #fbfaf9;
+    --bg-card: #ffffff;
+    --text: #1f2328;
+    --text-muted: #5b636b;
+    --accent: #6f4e7c;
+    --accent-soft: #f1eaf4;
+    --border: #e4e0dc;
+    --good: #3a7d5c;
+    --warn: #a1583a;
+    --code-bg: #f4f2ef;
+    --max-width: 760px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.65;
+    font-size: 17px;
+  }
+  .wrap { max-width: var(--max-width); margin: 0 auto; padding: 0 20px 100px; }
+  header.hero {
+    background: linear-gradient(180deg, var(--accent-soft), var(--bg) 90%);
+    padding: 64px 20px 40px;
+    border-bottom: 1px solid var(--border);
+  }
+  header.hero .wrap { padding: 0; }
+  .kicker {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-size: clamp(28px, 5vw, 38px);
+    line-height: 1.2;
+    margin: 0 0 16px;
+    letter-spacing: -0.01em;
+  }
+  .byline { color: var(--text-muted); font-size: 15px; margin-bottom: 4px; }
+  .byline a { color: var(--accent); }
+  main { padding-top: 44px; }
+  h2 {
+    font-size: 24px;
+    margin: 56px 0 18px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    letter-spacing: -0.01em;
+  }
+  h2:first-of-type { border-top: none; margin-top: 0; }
+  h3 { font-size: 18px; margin: 28px 0 10px; }
+  p { margin: 0 0 16px; }
+  ul, ol { margin: 0 0 16px; padding-left: 22px; }
+  li { margin-bottom: 6px; }
+  a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 3px; }
+  a:hover { text-decoration-color: var(--accent); }
+  code {
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.88em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    padding: 14px 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; }
+
+  .abstract {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 26px;
+    margin: -20px 0 8px;
+  }
+  .abstract .label { font-weight: 700; text-transform: uppercase; font-size: 12px; letter-spacing: 0.06em; color: var(--accent); margin-bottom: 10px; }
+
+  figure { margin: 24px 0; }
+  figure img { max-width: 100%; height: auto; display: block; border-radius: 8px; border: 1px solid var(--border); background: #fff; }
+  figcaption { font-size: 14px; color: var(--text-muted); margin-top: 8px; text-align: center; }
+
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 15px; }
+  caption { caption-side: top; text-align: left; font-size: 14px; color: var(--text-muted); margin-bottom: 6px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+  th { font-weight: 600; background: var(--code-bg); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    margin: 20px 0;
+  }
+  .callout.warn { border-left-color: var(--warn); background: #fbf1ec; }
+  .callout.good { border-left-color: var(--good); background: #eef6f1; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .stat-row { display: flex; gap: 16px; flex-wrap: wrap; margin: 20px 0; }
+  .stat { flex: 1 1 140px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .stat .n { font-size: 26px; font-weight: 700; color: var(--accent); line-height: 1.1; }
+  .stat .l { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+  .no-go { list-style: none; padding-left: 0; }
+  .no-go li { padding-left: 28px; position: relative; }
+  .no-go li::before { content: "\2715"; position: absolute; left: 0; color: var(--warn); font-weight: 700; }
+
+  footer {
+    margin-top: 70px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  @media (max-width: 600px) {
+    body { font-size: 16px; }
+    header.hero { padding: 44px 16px 30px; }
+    h2 { margin-top: 42px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">Research Report &middot; FlyRank ML Internship Capstone</div>
+    <h1>Which Content Pages Should You Refresh First?</h1>
+    <p class="byline">A client-grouped, leakage-audited scoring approach, built on the FlyRank ML Internship dataset</p>
+    <p class="byline">Repo: <a href="https://github.com/DanialHameed/fly">github.com/DanialHameed/fly</a></p>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="abstract">
+    <div class="label">Abstract</div>
+    <p>
+      Given a portfolio of published content pages, which ones should a content team review first
+      for refresh, expansion, or protection &mdash; out of far more candidates than there is time
+      to touch? This study uses the FlyRank ML Internship starter dataset (30,000 pseudonymized
+      content pages across 32 clients, trailing 90-day search and analytics signals), with a
+      companion data-contract exercise against the full 79-million-row FlyRank warehouse to confirm
+      the approach scales. A hand-written, auditable baseline (a CTR gap at an achievable search
+      position) is compared against a Logistic Regression model, validated with a client-grouped
+      holdout so that no client's pages inform both training and evaluation. The validated model
+      reaches 0.740 precision on its top 50 recommendations (0.800 at 100) &mdash; well above both
+      the 0.640 baseline and the 0.542 base rate &mdash; but a naive, non-grouped split alone would
+      have measured that same model at 0.90, a 26-point inflation from split design, not model
+      quality. The output is a ranked, reason-coded action queue intended strictly as a reviewer
+      aid, with explicit no-go rules and monitoring triggers.
+    </p>
+  </div>
+
+  <h2 id="intro">Introduction</h2>
+  <p>
+    A content team can review a fixed number of pages per cycle &mdash; realistically, on the order
+    of 50 &mdash; against a portfolio that holds thousands of candidates. Working through them
+    alphabetically or by gut feel wastes review time on pages that were never going to move, while
+    pages that genuinely need attention lose visibility silently until someone happens to notice.
+    The decision this work supports is narrow and concrete: <em>given limited review capacity, which
+    pages should be reviewed this cycle, and why?</em>
+  </p>
+  <p>
+    That "why" matters as much as the ranking. A score with no reason attached isn't trustworthy to
+    a reviewer and can't be checked against their own judgment of the page. Every recommendation in
+    this study carries a plain-language reason code, a confidence tier, and an explicit statement of
+    what would make that specific recommendation wrong.
+  </p>
+
+  <h2 id="data">Data</h2>
+  <p>
+    Two datasets were used, at different stages of this project, for different purposes.
+  </p>
+  <h3>The starter dataset (used for the model in this paper)</h3>
+  <p>
+    <code>content_refresh_anonymized.csv</code>: 30,000 rows &times; 44 columns, one row per
+    pseudonymized content page, spanning 32 pseudonymized clients, with trailing-90-day search
+    (Google Search Console) and analytics (GA4) metrics. Identifiers (<code>content_id</code>,
+    <code>client_id</code>) are pseudonyms used only for grouping and splitting &mdash; never as
+    model features.
+  </p>
+  <h3>The FlyRank warehouse (data-contract exercise, not the model's training data)</h3>
+  <p>
+    To confirm this approach is ready to scale, a separate exercise queried the full
+    <code>FlyRank/internship-warehouse</code> release on Hugging Face (~79 million daily
+    performance rows) directly via DuckDB against a mid-panel month
+    (<code>month=2026-03</code>, 9,841,378 rows, 55 clients, 331,437 content items). That exercise
+    is not the source of the model reported here, but it surfaced two concrete data-safety findings
+    worth stating plainly, since they'd matter immediately on scale-up:
+  </p>
+  <ul>
+    <li>
+      <strong>A snapshot trap.</strong> The warehouse's content dimension table records only the
+      current state as of its July 2026 export &mdash; 88.1% of March rows showed a
+      "last updated" date <em>after</em> that row's own report date. Computing "days since update"
+      naively against this table would leak the future into a feature.
+    </li>
+    <li>
+      <strong>A three-valued availability flag.</strong> GA4 data availability is <code>TRUE</code>
+      for only 4.2% of March rows, <code>FALSE</code> for 65.1%, and <code>NULL</code> for the
+      remaining 30.7% &mdash; a plain <code>= FALSE</code> filter would silently mishandle nearly a
+      third of the table.
+    </li>
+  </ul>
+  <p>
+    Columns deliberately excluded from modeling, and why: <code>trend_direction</code> and
+    <code>trend_pct</code> (the label's own source &mdash; using them as features would be
+    tautological); <code>provider_used</code> / <code>model_used</code> (not observed search or
+    engagement behavior); <code>content_id</code> / <code>client_id</code> (identifiers, grouping
+    only). No client names, URLs, or private queries appear anywhere in this study.
+  </p>
+
+  <h2 id="methodology">Methodology</h2>
+  <h3>Task framing</h3>
+  <p>
+    This is a classification model &mdash; predicting an observed, binary label &mdash; deployed as
+    a <em>ranking</em> tool: pages are sorted by predicted probability, and a reviewer works the
+    list top-down. That's why the evaluation metric throughout is <strong>precision@K</strong>
+    (of the top K ranked pages, how many are actually right?) rather than accuracy or AUC alone
+    &mdash; precision@K is the number that matches the actual constraint of a fixed review
+    capacity.
+  </p>
+  <h3>Label / proxy</h3>
+  <p>
+    The true target &mdash; "does this page need a content review" &mdash; is never directly
+    observed. The proxy used is <code>is_declining_label</code>: 1 when a page's impressions fell
+    more than 20% from the previous 30-day window to the last 30-day window, 0 otherwise (54.2% of
+    pages, an observed quantity, not a rule invented after the fact). This proxy has a known gap: a
+    page can lose impressions for reasons a reviewer wouldn't act on (seasonality, a paused
+    campaign), and a page can be worth reviewing without yet showing a measurable decline.
+  </p>
+  <h3>Baseline</h3>
+  <p>
+    A transparent, hand-written rule, built the same way FlyRank's own session materials describe:
+    a score combining a CTR gap at an achievable search position (positions 1&ndash;20), page
+    visibility, and staleness &mdash; each weighted by hand, no fitted parameters. Two signals were
+    checked against real data before the rule was written: staleness alone came back
+    <strong>MIXED</strong> (not a clean, monotonic relationship with decline), while CTR-vs-position
+    came back <strong>CONFIRMED</strong> (a clean, monotonic relationship within every position
+    band) &mdash; so the rule leans primarily on the confirmed signal.
+  </p>
+  <h3>Model</h3>
+  <p>
+    Logistic Regression and Random Forest were both trained and compared on the same
+    client-grouped holdout; Logistic Regression won at every K on that split, which is the opposite
+    of what a naively-run comparison on this same data would suggest at first glance &mdash; a
+    disagreement reported directly rather than resolved by picking the cleaner-sounding story. The
+    deployed queue in this paper is scored by Logistic Regression via 5-fold
+    <code>GroupKFold</code> cross-validation (grouped by <code>client_id</code>), giving every one
+    of the 30,000 rows an out-of-fold prediction from a model that never saw that row's client
+    during training.
+  </p>
+  <h3>Validation design and the leakage audit</h3>
+  <p>
+    Every split in this study is grouped by <code>client_id</code>: a client's pages either all sit
+    in training or all sit in the held-out set, never split across both. The reason this matters is
+    not theoretical &mdash; it was measured directly:
+  </p>
+
+  <figure>
+    <img src="assets/split_leakage.svg" alt="Bar chart comparing precision at 50 for a naive random split (0.90) versus a grouped client-holdout split (0.64)">
+    <figcaption>Same model, same features, same data &mdash; only the split changed. A naive random
+    split let 31 clients appear in both train and test, inflating precision@50 by 26 points.</figcaption>
+  </figure>
+
+  <p>
+    A generalized leakage smell-test was also run across every numeric feature: the strongest
+    single-feature correlation with the label was 0.220 (<code>has_position</code>), far below a
+    0.9 flag threshold that would suggest a feature was quietly restating the label &mdash; the
+    kind of circularity found, and openly disclosed, in FlyRank's own March 2026 research paper,
+    where the top health-score predictors turned out to be three of the score's own four formula
+    ingredients.
+  </p>
+
+  <h2 id="results">Results</h2>
+  <table>
+    <caption>Precision@K, same data, base rate 0.542</caption>
+    <thead>
+      <tr><th>Method</th><th class="num">@10</th><th class="num">@20</th><th class="num">@50</th><th class="num">@100</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Base rate (random)</td><td class="num">0.542</td><td class="num">0.542</td><td class="num">0.542</td><td class="num">0.542</td></tr>
+      <tr><td>Hand-written baseline rule</td><td class="num">0.30</td><td class="num">0.40</td><td class="num">0.640</td><td class="num">0.61</td></tr>
+      <tr><td><strong>Logistic Regression (out-of-fold)</strong></td><td class="num"><strong>0.60</strong></td><td class="num"><strong>0.75</strong></td><td class="num"><strong>0.740</strong></td><td class="num"><strong>0.80</strong></td></tr>
+    </tbody>
+  </table>
+
+  <figure>
+    <img src="assets/model_vs_baseline.svg" alt="Bar chart comparing precision at K=10,20,50,100 for the baseline rule versus the validated model, with the base rate marked as a reference line">
+    <figcaption>The validated model clears both the hand-written baseline and the base rate at
+    every review-capacity size tested.</figcaption>
+  </figure>
+
+  <div class="callout">
+    <p>
+      <strong>Read precision@50 and @100 as the trustworthy numbers.</strong> Precision@10 and @20
+      are measurably noisier &mdash; with only 8&ndash;10 items in the numerator, a single item
+      flipping moves the score by up to 10 points. This was confirmed directly when comparing
+      Logistic Regression against Random Forest: the models' ranking at K=10 looked more dramatic
+      than their ranking at K=100, on the exact same split.
+    </p>
+  </div>
+
+  <h3>Where the model is wrong</h3>
+  <p>
+    High-confidence false positives (predicted declining, actually stable) share one pattern: a
+    near-zero click-through rate at an otherwise reasonable position, on pages whose low CTR is
+    plausibly explained by query intent (navigational or branded queries) rather than a fixable
+    content problem &mdash; the model inherited the baseline rule's exact blind spot. High-confidence
+    false negatives are pages with almost no data at all (1&ndash;2 impressions in 90 days) &mdash;
+    cases where there simply isn't enough signal for any method to do better.
+  </p>
+
+  <h2 id="limitations">Limitations</h2>
+  <ul>
+    <li>
+      <strong>The label is a proxy, not ground truth.</strong> "Declining" means a measured
+      impressions drop &mdash; not a confirmed content problem, and not a guarantee that a refresh
+      would help.
+    </li>
+    <li>
+      <strong>Client concentration in the ranked queue.</strong> Found first in the hand-written
+      baseline and confirmed again in the validated model: the top of the queue draws
+      disproportionately from the one or two largest clients by page count, because they simply
+      supply more high-scoring candidates &mdash; not because smaller clients' problems are less
+      real. A fair rollout across FlyRank's client book would need a per-client cap or per-client
+      reporting.
+    </li>
+    <li>
+      <strong>A single point-in-time snapshot.</strong> 30,000 rows, one export &mdash; not a live
+      feed, and not yet the 79-million-row warehouse.
+    </li>
+    <li>
+      <strong>Observational, not causal.</strong> Every relationship reported here is a measured
+      correlation on this data. Nothing in this study establishes that refreshing a page
+      <em>causes</em> a recovery, and nothing here predicts a search engine's future behavior.
+    </li>
+    <li>
+      <strong>One grouped split, not a repeated cross-validation.</strong> The single-split
+      comparison (Logistic Regression vs. Random Forest) used one client-holdout draw; a repeated
+      grouped cross-validation would be needed before fully trusting which model generalizes
+      better, particularly given how few clients (8) sat in that held-out fold.
+    </li>
+  </ul>
+
+  <h2 id="recommendations">Ranked recommendations</h2>
+  <p>
+    Each page's reason code maps to a suggested action &mdash; but only when the model's own
+    confidence clears "low"; a page can match a strong pattern and still be routed to
+    <code>monitor</code> if the model itself isn't confident.
+  </p>
+
+  <figure>
+    <img src="assets/action_mix.svg" alt="Horizontal bar chart of suggested action counts: monitor, refresh, review CTR then refresh, and expand and refresh">
+    <figcaption>Suggested action mix across the full 30,000-page queue, confidence-gated.</figcaption>
+  </figure>
+
+  <table>
+    <caption>Reason code &rarr; action mapping</caption>
+    <thead><tr><th>Reason code</th><th>Suggested action</th></tr></thead>
+    <tbody>
+      <tr><td>CTR gap at an achievable position</td><td>Review CTR (title/meta), then refresh</td></tr>
+      <tr><td>Stale, but visible</td><td>Refresh</td></tr>
+      <tr><td>Thin, but visible</td><td>Expand and refresh</td></tr>
+      <tr><td>Visible, no specific flag / low confidence</td><td>Monitor</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Intended use</h3>
+  <p>
+    A reviewer aid for a fixed weekly review capacity &mdash; the reviewer takes the ranked
+    shortlist and applies their own judgment to each row before acting. 48.7% of actionable
+    (non-monitor) rows sit at "medium" rather than "high" confidence and require mandatory review
+    before any action, not a spot-check.
+  </p>
+
+  <h3>What should never be automated</h3>
+  <ul class="no-go">
+    <li>Auto-publishing, auto-deleting, or auto-redirecting content based on this queue alone.</li>
+    <li>Using this score as an employee, agency, or vendor performance metric &mdash; it scores
+    pages, not people.</li>
+    <li>Treating "declining" as a causal diagnosis of <em>why</em> a page is struggling.</li>
+    <li>Running this queue against live data without revalidating &mdash; it was trained and
+    validated on a single mid-2026 export.</li>
+  </ul>
+
+  <h3>Monitoring / retrain triggers</h3>
+  <ul>
+    <li>Base rate drifting meaningfully away from 0.542.</li>
+    <li>The top features by model coefficient changing rank or sign on a retrain.</li>
+    <li>A new warehouse export becoming available.</li>
+    <li>Precision@50 on a realized, human-checked outcome sample dropping meaningfully below 0.74.</li>
+  </ul>
+
+  <h2 id="reproducibility">Reproducibility</h2>
+  <p>
+    Every number in this paper traces back to an executed notebook in the linked repository. Fixed
+    random seed: <code>42</code> throughout. To rerun: clone the repo, <code>pip install -r
+    requirements.txt</code>, and execute the notebooks below in order (<code>jupyter nbconvert
+    --to notebook --execute</code>, or open in Colab via the badge on each notebook).
+  </p>
+  <table>
+    <thead><tr><th>Notebook</th><th>What it establishes</th></tr></thead>
+    <tbody>
+      <tr><td><a href="https://github.com/DanialHameed/fly/blob/main/work/notebooks/w02_ml_task_framing.ipynb">w02_ml_task_framing.ipynb</a></td><td>Task type, target/proxy, success metric</td></tr>
+      <tr><td><a href="https://github.com/DanialHameed/fly/blob/main/work/notebooks/w03_data_contract.ipynb">w03_data_contract.ipynb</a></td><td>Warehouse data contract, verified queries, deliberate leak trap</td></tr>
+      <tr><td><a href="https://github.com/DanialHameed/fly/blob/main/work/notebooks/w04_baseline_score.ipynb">w04_baseline_score.ipynb</a></td><td>Hand-written baseline, signal checks, top-10 review</td></tr>
+      <tr><td><a href="https://github.com/DanialHameed/fly/blob/main/work/notebooks/w05_model.ipynb">w05_model.ipynb</a></td><td>Model vs. baseline, grouped split, error analysis</td></tr>
+      <tr><td><a href="https://github.com/DanialHameed/fly/blob/main/work/notebooks/w06_validation_audit.ipynb">w06_validation_audit.ipynb</a></td><td>Paper methodology audit, honest-split before/after, leakage audit</td></tr>
+      <tr><td><a href="https://github.com/DanialHameed/fly/blob/main/work/notebooks/w07_action_playbook.ipynb">w07_action_playbook.ipynb</a></td><td>Final ranked queue, reason codes, monitoring plan</td></tr>
+      <tr><td><a href="https://github.com/DanialHameed/fly/blob/main/work/notebooks/capstone.ipynb">capstone.ipynb</a></td><td>This paper, mirrored as an executable notebook</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="acknowledgments">Acknowledgments &amp; data credit</h2>
+  <p>
+    Built on the <strong>FlyRank ML Internship dataset</strong>, provided by
+    <a href="https://flyrank.ai">FlyRank</a>. Section 4's validation-design critique engages
+    respectfully with FlyRank's own <em>State of AI-Driven SEO, March 2026</em> research report,
+    whose transparency about its own methodology &mdash; including openly disclosing where its
+    Health Score feature importance is partly circular &mdash; set the standard this paper tried to
+    meet.
+  </p>
+
+  <footer>
+    <p>Research report &middot; FlyRank ML Internship Capstone &middot;
+    <a href="https://github.com/DanialHameed/fly">github.com/DanialHameed/fly</a></p>
+  </footer>
+
+</main>
+</body>
+</html>
