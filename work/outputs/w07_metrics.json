@@ -1,0 +1,37 @@
+{
+  "model": "logistic_regression",
+  "validation": "5-fold GroupKFold by client_id (out-of-fold predictions, full coverage)",
+  "base_rate": 0.5421,
+  "precision_at_k": {
+    "precision@10": 0.6,
+    "precision@20": 0.75,
+    "precision@50": 0.74,
+    "precision@100": 0.8,
+    "precision@500": 0.73
+  },
+  "reason_code_mix": {
+    "visible_no_specific_flag": 10370,
+    "low_visibility_monitor": 7994,
+    "stale_visible_page": 6104,
+    "ctr_gap_at_achievable_position": 5445,
+    "thin_visible_page": 87
+  },
+  "suggested_action_mix": {
+    "monitor": 18875,
+    "refresh": 5677,
+    "review_ctr_then_refresh": 5400,
+    "expand_and_refresh": 48
+  },
+  "confidence_tier_mix": {
+    "medium": 16534,
+    "high": 8510,
+    "low": 4956
+  },
+  "top_5_coefficients_by_abs_value": {
+    "log_impressions_90d": 0.9103,
+    "has_position": 0.862,
+    "log_clicks_90d": -0.6703,
+    "word_count": 0.3864,
+    "content_type_comparison article": -0.3668
+  }
+}
