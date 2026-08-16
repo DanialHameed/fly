@@ -154,30 +154,38 @@
   <div class="abstract">
     <div class="label">Abstract</div>
     <p>
-      Given a portfolio of published content pages, which ones should a content team review first
-      for refresh, expansion, or protection &mdash; out of far more candidates than there is time
-      to touch? This study uses the FlyRank ML Internship starter dataset (30,000 pseudonymized
-      content pages across 32 clients, trailing 90-day search and analytics signals), with a
-      companion data-contract exercise against the full 79-million-row FlyRank warehouse to confirm
-      the approach scales. A hand-written, auditable baseline (a CTR gap at an achievable search
-      position) is compared against a Logistic Regression model, validated with a client-grouped
-      holdout so that no client's pages inform both training and evaluation. The validated model
-      reaches 0.740 precision on its top 50 recommendations (0.800 at 100) &mdash; well above both
-      the 0.640 baseline and the 0.542 base rate &mdash; but a naive, non-grouped split alone would
-      have measured that same model at 0.90, a 26-point inflation from split design, not model
-      quality. The output is a ranked, reason-coded action queue intended strictly as a reviewer
-      aid, with explicit no-go rules and monitoring triggers.
+      FlyRank's own March 2026 portfolio study names "refresh mature pages before they decay" as
+      its #1 playbook priority, backed by a stark pattern in 341,701 real content pieces: health
+      score peaks at 61&ndash;90 days, falls to its lowest point by 271&ndash;365 days, and recovers
+      only when a page is actually refreshed. That's a direction, not a queue &mdash; it doesn't say
+      <em>which</em> pages, <em>this week</em>, out of far more candidates than a team has time to
+      touch. This study turns FlyRank's own stated priority into exactly that: a validated,
+      per-page ranking. Using the FlyRank ML Internship starter dataset (30,000 pseudonymized
+      content pages across 32 clients) plus a companion data-contract exercise against the full
+      79-million-row FlyRank warehouse, a hand-written baseline is compared against a Logistic
+      Regression model validated with a client-grouped holdout. The validated model reaches 0.740
+      precision on its top 50 recommendations (0.800 at 100) &mdash; well above both the 0.640
+      baseline and the 0.542 base rate &mdash; but a naive, non-grouped split alone would have
+      measured that same model at 0.90, a 26-point inflation from split design, not model quality.
+      The output is a ranked, reason-coded action queue intended strictly as a reviewer aid, with
+      explicit no-go rules and monitoring triggers.
     </p>
   </div>
 
   <h2 id="intro">Introduction</h2>
   <p>
-    A content team can review a fixed number of pages per cycle &mdash; realistically, on the order
-    of 50 &mdash; against a portfolio that holds thousands of candidates. Working through them
-    alphabetically or by gut feel wastes review time on pages that were never going to move, while
-    pages that genuinely need attention lose visibility silently until someone happens to notice.
-    The decision this work supports is narrow and concrete: <em>given limited review capacity, which
-    pages should be reviewed this cycle, and why?</em>
+    This paper's case study is FlyRank's own: their March 2026 portfolio report measured content
+    health falling from 33.1 at its 61&ndash;90-day peak to 14 by 271&ndash;365 days, and found
+    that pages refreshed within 30 days of the 365+ day mark saw a 3.2x health boost and 57x more
+    impressions than similarly old, untouched pages. Their playbook's own first recommendation is
+    to act on this &mdash; "refresh mature pages before they decay" &mdash; and it's presented as a
+    portfolio-wide pattern, not a per-page tool. A content team reading that finding still faces
+    the same operational question: out of thousands of candidate pages, and a review capacity of
+    roughly 50 per cycle, <em>which pages, this week?</em> Working through a backlog alphabetically
+    or by gut feel wastes review time on pages that were never going to move, while pages that
+    genuinely need attention lose visibility silently until someone happens to notice. This study
+    builds and validates the missing piece: a per-page, reason-coded ranking that operationalizes
+    FlyRank's own headline recommendation into something a reviewer can act on this cycle.
   </p>
   <p>
     That "why" matters as much as the ranking. A score with no reason attached isn't trustworthy to
