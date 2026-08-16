@@ -154,21 +154,20 @@
   <div class="abstract">
     <div class="label">Abstract</div>
     <p>
-      FlyRank's own March 2026 portfolio study names "refresh mature pages before they decay" as
-      its #1 playbook priority, backed by a stark pattern in 341,701 real content pieces: health
-      score peaks at 61&ndash;90 days, falls to its lowest point by 271&ndash;365 days, and recovers
-      only when a page is actually refreshed. That's a direction, not a queue &mdash; it doesn't say
-      <em>which</em> pages, <em>this week</em>, out of far more candidates than a team has time to
-      touch. This study turns FlyRank's own stated priority into exactly that: a validated,
-      per-page ranking. Using the FlyRank ML Internship starter dataset (30,000 pseudonymized
-      content pages across 32 clients) plus a companion data-contract exercise against the full
-      79-million-row FlyRank warehouse, a hand-written baseline is compared against a Logistic
-      Regression model validated with a client-grouped holdout. The validated model reaches 0.740
-      precision on its top 50 recommendations (0.800 at 100) &mdash; well above both the 0.640
-      baseline and the 0.542 base rate &mdash; but a naive, non-grouped split alone would have
-      measured that same model at 0.90, a 26-point inflation from split design, not model quality.
-      The output is a ranked, reason-coded action queue intended strictly as a reviewer aid, with
-      explicit no-go rules and monitoring triggers.
+      FlyRank's own March 2026 portfolio report names refreshing mature pages as its top playbook
+      priority, backed by real portfolio patterns &mdash; but that's a direction, not a queue: it
+      doesn't say <em>which</em> pages, out of thousands of candidates and a fixed weekly review
+      capacity, a team should act on this week. Using the FlyRank ML Internship starter dataset
+      (30,000 pseudonymized content pages across 32 clients) plus a companion data-contract
+      exercise against the full 79-million-row FlyRank warehouse, this study answers that question:
+      a hand-written baseline is compared against a Logistic Regression model, validated with a
+      client-grouped holdout so no client's pages inform both training and evaluation. The
+      validated model reaches 0.740 precision on its top 50 recommendations (0.800 at 100) &mdash;
+      well above both the 0.640 baseline and the 0.542 base rate. A naive, non-grouped split alone
+      would have measured that same model at 0.90 instead &mdash; a 26-point inflation from split
+      design, not model quality, and the clearest evidence in this paper for why validation design
+      matters as much as the model itself. The output is a ranked, reason-coded action queue
+      intended strictly as a reviewer aid, with explicit no-go rules and monitoring triggers.
     </p>
   </div>
 
